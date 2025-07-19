@@ -393,3 +393,4 @@ Before deploying to production:
 - [ ] Set up CI/CD pipeline
 - [ ] Security audit and penetration testing
 # Trigger redeploy
+# Force redeploy with debug script
