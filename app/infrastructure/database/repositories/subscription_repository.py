@@ -51,12 +51,8 @@ class SubscriptionRepository(ISubscriptionRepository):
         devices = []
         
         # Safely handle devices relationship to avoid async issues
-        try:
-            if hasattr(model, 'devices') and model.devices is not None:
-                devices = [self._device_model_to_entity(d) for d in model.devices]
-        except Exception:
-            # If devices can't be loaded (e.g., during creation), default to empty list
-            devices = []
+        # Default to empty list during creation to avoid lazy loading
+        devices = []
         
         subscription = Subscription(
             id=model.id,
@@ -79,9 +75,8 @@ class SubscriptionRepository(ISubscriptionRepository):
             devices=devices,
         )
         
-        # Store customer model for performance optimization (avoid N+1 queries)
-        if hasattr(model, 'customer') and model.customer:
-            subscription.customer_model = model.customer
+        # Note: Avoiding customer model access here to prevent lazy loading
+        # Customer will be loaded separately when needed
         
         return subscription
     
