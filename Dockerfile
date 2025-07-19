@@ -41,5 +41,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8000/health || exit 1
 
-# Command to run the application (with migrations)
-CMD ["python", "main.py"] 
+# Command to run the application (temporarily skip migrations to test CORS)
+CMD ["python", "skip_migration_main.py"] 
