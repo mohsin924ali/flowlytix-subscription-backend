@@ -292,6 +292,13 @@ async def activate_license(
     summary="Validate license",
     description="Validate a license key for a specific device",
 )
+@router.post(
+    "/check",
+    response_model=LicenseValidationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Check license (alias for validate)",
+    description="Check/validate a license key for a specific device (alias for /validate)",
+)
 async def validate_license(
     request: LicenseValidationRequest,
     request_obj: Request,
