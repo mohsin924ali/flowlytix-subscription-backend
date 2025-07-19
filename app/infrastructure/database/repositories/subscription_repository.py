@@ -89,17 +89,34 @@ class SubscriptionRepository(ISubscriptionRepository):
         """Convert domain entity to SQLAlchemy model."""
         # Safely extract features
         features = {}
-        if hasattr(entity, 'feature_set') and entity.feature_set:
-            features = entity.feature_set.features
-        elif hasattr(entity, 'features') and entity.features:
+        if hasattr(entity, 'features') and entity.features:
             features = entity.features
+        elif hasattr(entity, 'feature_set') and entity.feature_set:
+            features = entity.feature_set.features
+        
+        # Safe enum conversion to avoid async issues
+        tier_value = entity.tier
+        if hasattr(tier_value, 'value'):
+            tier_value = tier_value.value
+        elif isinstance(tier_value, str):
+            tier_value = tier_value
+        else:
+            tier_value = str(tier_value)
+            
+        status_value = entity.status  
+        if hasattr(status_value, 'value'):
+            status_value = status_value.value
+        elif isinstance(status_value, str):
+            status_value = status_value
+        else:
+            status_value = str(status_value)
         
         return SubscriptionModel(
             id=entity.id,
             customer_id=entity.customer_id,
             license_key=entity.license_key,
-            tier=entity.tier.value if hasattr(entity.tier, 'value') else str(entity.tier),
-            status=entity.status.value if hasattr(entity.status, 'value') else str(entity.status),
+            tier=tier_value,
+            status=status_value,
             features=features,
             max_devices=entity.max_devices,
             starts_at=entity.starts_at,
@@ -228,13 +245,37 @@ class SubscriptionRepository(ISubscriptionRepository):
         try:
             subscription.updated_at = datetime.now(timezone.utc)
             
+            # Safe enum conversion
+            tier_value = subscription.tier
+            if hasattr(tier_value, 'value'):
+                tier_value = tier_value.value
+            elif isinstance(tier_value, str):
+                tier_value = tier_value
+            else:
+                tier_value = str(tier_value)
+                
+            status_value = subscription.status
+            if hasattr(status_value, 'value'):
+                status_value = status_value.value
+            elif isinstance(status_value, str):
+                status_value = status_value
+            else:
+                status_value = str(status_value)
+            
+            # Safe features extraction
+            features = {}
+            if hasattr(subscription, 'features') and subscription.features:
+                features = subscription.features
+            elif hasattr(subscription, 'feature_set') and subscription.feature_set:
+                features = subscription.feature_set.features
+            
             stmt = (
                 update(SubscriptionModel)
                 .where(SubscriptionModel.id == subscription.id)
                 .values(
-                    tier=subscription.tier,
-                    status=subscription.status,
-                    features=subscription.feature_set.features,
+                    tier=tier_value,
+                    status=status_value,
+                    features=features,
                     max_devices=subscription.max_devices,
                     starts_at=subscription.starts_at,
                     expires_at=subscription.expires_at,
@@ -257,7 +298,7 @@ class SubscriptionRepository(ISubscriptionRepository):
             logger.info(
                 "Subscription updated",
                 subscription_id=str(subscription.id),
-                status=subscription.status.value if hasattr(subscription.status, 'value') else str(subscription.status),
+                status=status_value,
             )
             
             return updated_subscription
