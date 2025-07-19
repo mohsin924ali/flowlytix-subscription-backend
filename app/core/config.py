@@ -82,7 +82,11 @@ class Settings(BaseSettings):
         description="Allowed hosts for CORS"
     )
     allowed_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8080"],
+        default=[
+            "https://flowlytix-subscription-dashboard.vercel.app",
+            "http://localhost:3000", 
+            "http://localhost:8080"
+        ],
         description="Allowed origins for CORS"
     )
     
