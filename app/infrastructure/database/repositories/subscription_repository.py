@@ -153,22 +153,46 @@ class SubscriptionRepository(ISubscriptionRepository):
     async def create(self, subscription: Subscription) -> Subscription:
         """Create a new subscription."""
         try:
+            logger.info("Starting subscription creation", 
+                       subscription_id=str(subscription.id),
+                       tier=str(subscription.tier),
+                       tier_type=type(subscription.tier).__name__)
+            
+            logger.info("Converting entity to model...")
             model = self._entity_to_model(subscription)
+            logger.info("Entity converted to model successfully")
+            
+            logger.info("Adding model to session...")
             self.session.add(model)
+            logger.info("Model added to session")
+            
+            logger.info("Flushing session...")
             await self.session.flush()
+            logger.info("Session flushed")
+            
+            logger.info("Refreshing model...")
             await self.session.refresh(model)
+            logger.info("Model refreshed")
             
             logger.info(
-                "Subscription created",
+                "Subscription created successfully",
                 subscription_id=str(model.id),
                 license_key=model.license_key[:8] + "***",
                 tier=model.tier,
             )
             
-            return self._model_to_entity(model)
+            logger.info("Converting model back to entity...")
+            result = self._model_to_entity(model)
+            logger.info("Model converted to entity successfully")
+            
+            return result
             
         except Exception as e:
-            logger.error("Failed to create subscription", error=str(e))
+            logger.error("Failed to create subscription", 
+                        error=str(e),
+                        error_type=type(e).__name__)
+            import traceback
+            logger.error("Traceback", traceback=traceback.format_exc())
             raise DatabaseException(f"Failed to create subscription: {e}", "create")
     
     async def get_by_id(self, subscription_id: UUID) -> Optional[Subscription]:
