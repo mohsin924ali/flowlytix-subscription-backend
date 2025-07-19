@@ -103,7 +103,7 @@ class DatabaseManager:
         @event.listens_for(self._engine.sync_engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             """Set SQLite pragmas for better performance (if using SQLite)."""
-            if "sqlite" in database_url:
+            if "sqlite" in str(settings.database_url):
                 cursor = dbapi_connection.cursor()
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.close()
