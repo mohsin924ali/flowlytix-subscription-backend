@@ -61,13 +61,18 @@ class DatabaseManager:
         
         Follows Instructions file standards for resource management.
         """
-        logger.info("Initializing database connection", database_url=str(settings.database_url))
+        logger.info("Initializing database connection", database_url=database_url)
+        # Convert Railway PostgreSQL URL to asyncpg format if needed
+        database_url = str(settings.database_url)
+        if database_url.startswith("postgresql://") and "+asyncpg" not in database_url:
+            database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+            logger.info("Converted Railway PostgreSQL URL to asyncpg format")
         
         # Create async engine with proper pool configuration
         pool_class = AsyncAdaptedQueuePool if not settings.is_testing else NullPool
         
         self._engine = create_async_engine(
-            str(settings.database_url),
+            database_url,
             echo=settings.database_echo,
             poolclass=pool_class,
             pool_size=settings.database_pool_size,
@@ -98,7 +103,7 @@ class DatabaseManager:
         @event.listens_for(self._engine.sync_engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             """Set SQLite pragmas for better performance (if using SQLite)."""
-            if "sqlite" in str(settings.database_url):
+            if "sqlite" in database_url:
                 cursor = dbapi_connection.cursor()
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.close()
