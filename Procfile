@@ -1,1 +1,1 @@
-web: python diagnostic_main.py 
+web: python migration_then_server.py 
