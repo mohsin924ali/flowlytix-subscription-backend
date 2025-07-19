@@ -1,1 +1,1 @@
-web: python skip_migration_main.py 
+web: python diagnostic_main.py 
