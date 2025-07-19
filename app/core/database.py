@@ -61,12 +61,12 @@ class DatabaseManager:
         
         Follows Instructions file standards for resource management.
         """
-        logger.info("Initializing database connection", database_url=database_url)
         # Convert Railway PostgreSQL URL to asyncpg format if needed
         database_url = str(settings.database_url)
         if database_url.startswith("postgresql://") and "+asyncpg" not in database_url:
             database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
             logger.info("Converted Railway PostgreSQL URL to asyncpg format")
+        logger.info("Initializing database connection", database_url=database_url)
         
         # Create async engine with proper pool configuration
         pool_class = AsyncAdaptedQueuePool if not settings.is_testing else NullPool
