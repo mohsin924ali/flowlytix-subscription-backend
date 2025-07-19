@@ -46,10 +46,16 @@ def get_database_url() -> str:
     # Try to get from environment variable first
     database_url = os.getenv("DATABASE_URL")
     if database_url:
+        # Convert Railway PostgreSQL URL to asyncpg format if needed
+        if database_url.startswith("postgresql://") and "+asyncpg" not in database_url:
+            database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
         return database_url
     
     # Fallback to config file
-    return config.get_main_option("sqlalchemy.url")
+    url = config.get_main_option("sqlalchemy.url")
+    if url and url.startswith("postgresql://") and "+asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://")
+    return url
 
 
 def run_migrations_offline() -> None:
@@ -101,13 +107,8 @@ async def run_async_migrations() -> None:
     """
     configuration = config.get_section(config.config_ini_section)
     
-    # Override URL with environment variable if available
+    # Override URL with environment variable if available (already converted in get_database_url)
     database_url = get_database_url()
-    
-    # Convert Railway PostgreSQL URL to asyncpg format if needed
-    if database_url.startswith("postgresql://") and "+asyncpg" not in database_url:
-        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
-    
     configuration["sqlalchemy.url"] = database_url
     
     connectable = async_engine_from_config(
