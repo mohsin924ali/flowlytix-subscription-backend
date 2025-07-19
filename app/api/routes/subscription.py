@@ -292,13 +292,6 @@ async def activate_license(
     summary="Validate license",
     description="Validate a license key for a specific device",
 )
-@router.post(
-    "/check",
-    response_model=LicenseValidationResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Check license (alias for validate)",
-    description="Check/validate a license key for a specific device (alias for /validate)",
-)
 async def validate_license(
     request: LicenseValidationRequest,
     request_obj: Request,
@@ -379,6 +372,27 @@ async def validate_license(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
         )
+
+
+@router.post(
+    "/check",
+    response_model=LicenseValidationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Check license (alias for validate)",
+    description="Check/validate a license key for a specific device (alias for /validate)",
+)
+async def check_license(
+    request: LicenseValidationRequest,
+    request_obj: Request,
+    service: SubscriptionService = Depends(get_subscription_service),
+) -> LicenseValidationResponse:
+    """
+    Check/validate a license for a specific device (alias for validate_license).
+    
+    This endpoint is identical to /validate but provides a more intuitive endpoint name.
+    """
+    # Use the same logic as validate_license
+    return await validate_license(request, request_obj, service)
 
 
 @router.post(
