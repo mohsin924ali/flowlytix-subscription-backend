@@ -151,6 +151,17 @@ class SubscriptionService:
             logger.warning("Invalid license key", license_key=license_key[:8] + "***")
             raise LicenseKeyInvalidException(reason="License key not found")
         
+        # Load devices for this subscription to check for existing device
+        devices = await self.device_repo.get_by_subscription_id(subscription.id)
+        subscription.devices = devices
+        
+        logger.info(
+            "Loaded devices for subscription",
+            subscription_id=str(subscription.id),
+            device_count=len(devices),
+            device_ids=[d.device_id for d in devices]
+        )
+        
         # Validate subscription for activation
         validation_result = subscription.validate_for_activation(device_id)
         
