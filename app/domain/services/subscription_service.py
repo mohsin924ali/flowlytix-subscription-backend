@@ -240,6 +240,10 @@ class SubscriptionService:
         if not subscription:
             raise LicenseKeyInvalidException(reason="License key not found")
         
+        # Load devices for this subscription to check for existing device
+        devices = await self.device_repo.get_by_subscription_id(subscription.id)
+        subscription.devices = devices
+        
         # Check if device exists for this subscription
         device = subscription.get_device(device_id)
         if not device or not device.is_active:
