@@ -50,9 +50,29 @@ class SubscriptionRepository(ISubscriptionRepository):
         """Convert SQLAlchemy model to domain entity."""
         devices = []
         
-        # Safely handle devices relationship to avoid async issues
-        # Default to empty list during creation to avoid lazy loading
+        # Handle devices relationship safely
         devices = []
+        
+        # Try to load devices if they're preloaded via selectinload
+        if hasattr(model, 'devices') and model.devices is not None:
+            try:
+                # Add debug logging to understand what's happening
+                logger.debug("Processing devices for subscription", 
+                           subscription_id=str(model.id), 
+                           device_count=len(model.devices) if model.devices else 0)
+                
+                devices = [self._device_model_to_entity(d) for d in model.devices]
+                
+                logger.debug("Successfully converted devices to entities", 
+                           subscription_id=str(model.id), 
+                           converted_count=len(devices))
+            except Exception as e:
+                # If any error occurs, fall back to empty list to avoid crashes
+                logger.warning("Failed to convert devices for subscription", 
+                             subscription_id=str(model.id), 
+                             error=str(e),
+                             error_type=type(e).__name__)
+                devices = []
         
         subscription = Subscription(
             id=model.id,
