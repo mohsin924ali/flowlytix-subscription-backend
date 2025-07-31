@@ -50,29 +50,35 @@ class SubscriptionRepository(ISubscriptionRepository):
         """Convert SQLAlchemy model to domain entity."""
         devices = []
         
-        # Handle devices relationship safely
-        devices = []
-        
-        # Try to load devices if they're preloaded via selectinload
-        if hasattr(model, 'devices') and model.devices is not None:
-            try:
-                # Add debug logging to understand what's happening
-                logger.debug("Processing devices for subscription", 
-                           subscription_id=str(model.id), 
-                           device_count=len(model.devices) if model.devices else 0)
-                
-                devices = [self._device_model_to_entity(d) for d in model.devices]
-                
-                logger.debug("Successfully converted devices to entities", 
-                           subscription_id=str(model.id), 
-                           converted_count=len(devices))
-            except Exception as e:
-                # If any error occurs, fall back to empty list to avoid crashes
-                logger.warning("Failed to convert devices for subscription", 
-                             subscription_id=str(model.id), 
-                             error=str(e),
-                             error_type=type(e).__name__)
-                devices = []
+        # Handle devices relationship safely - check if devices are accessible
+        try:
+            # Check if devices relationship is loaded (not lazy-loaded)
+            if hasattr(model, 'devices'):
+                # Try to access the devices attribute safely
+                model_devices = model.devices
+                if model_devices is not None:
+                    logger.debug("Processing devices for subscription", 
+                               subscription_id=str(model.id), 
+                               device_count=len(model_devices))
+                    
+                    devices = [self._device_model_to_entity(d) for d in model_devices]
+                    
+                    logger.debug("Successfully converted devices to entities", 
+                               subscription_id=str(model.id), 
+                               converted_count=len(devices))
+                else:
+                    logger.debug("No devices found for subscription", 
+                               subscription_id=str(model.id))
+            else:
+                logger.debug("Devices relationship not available for subscription", 
+                           subscription_id=str(model.id))
+        except Exception as e:
+            # If any error occurs (including lazy loading issues), fall back to empty list
+            logger.warning("Failed to access or convert devices for subscription", 
+                         subscription_id=str(model.id), 
+                         error=str(e),
+                         error_type=type(e).__name__)
+            devices = []
         
         subscription = Subscription(
             id=model.id,
@@ -196,8 +202,18 @@ class SubscriptionRepository(ISubscriptionRepository):
                 tier=model.tier,
             )
             
+            # Re-fetch the subscription with eager loading to avoid lazy loading issues
+            logger.info("Re-fetching subscription with eager loading...")
+            stmt = (
+                select(SubscriptionModel)
+                .options(selectinload(SubscriptionModel.devices))
+                .where(SubscriptionModel.id == model.id)
+            )
+            result = await self.session.execute(stmt)
+            refreshed_model = result.scalar_one()
+            
             logger.info("Converting model back to entity...")
-            result = self._model_to_entity(model)
+            result = self._model_to_entity(refreshed_model)
             logger.info("Model converted to entity successfully")
             
             return result

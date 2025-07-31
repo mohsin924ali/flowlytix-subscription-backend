@@ -8,7 +8,7 @@ Follows Instructions file standards for testing.
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app
+from main_fixed import app
 
 
 @pytest.fixture
